@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Garcha NDA Coach</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f5f3a">
+<link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="NDA Coach">
+<meta name="description" content="NDA written exam coach: syllabus tracker, verified shortcuts, daily recall, weekly and monthly tests, latest current affairs.">
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#16202a;--mut:#5d6b78;--line:#dfe4ea;--pri:#1f5f3a;--pri2:#e6f2ea;--bad:#b3261e;--bad2:#fbe9e7;--ok:#1b7a43;--warn:#9a6700;--warn2:#fff4d6}
+@media(prefers-color-scheme:dark){:root{--bg:#10161c;--card:#18212a;--ink:#e8edf2;--mut:#9aa8b5;--line:#2a3743;--pri:#5fc58a;--pri2:#1b3326;--bad:#ff8a80;--bad2:#3a1f1d;--ok:#6fd49a;--warn:#f0c14b;--warn2:#3a3115}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+header{padding:12px 16px;background:var(--pri);color:#fff;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px}
+header h1{font-size:17px;margin:0}header small{opacity:.85}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 16px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+nav button{white-space:nowrap}
+main{max-width:920px;margin:0 auto;padding:14px 16px 80px}
+footer{position:fixed;left:0;right:0;bottom:0;text-align:center;padding:7px;font-size:12px;letter-spacing:.5px;color:var(--mut);background:var(--card);border-top:1px solid var(--line);z-index:9}
+header button{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.4)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:0 0 12px}
+button,select,input,textarea{font:inherit;color:var(--ink)}
+button{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+button.p,nav button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+button:disabled{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px}
+.opt.sel{border-color:var(--pri);background:var(--pri2)}.opt.right{border-color:var(--ok);background:var(--pri2)}.opt.wrong{border-color:var(--bad);background:var(--bad2)}
+.mut{color:var(--mut)}.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--pri2);color:var(--pri);margin-right:4px}
+.ok{color:var(--ok)}.bad{color:var(--bad)}.warn{background:var(--warn2);color:var(--warn);padding:8px 10px;border-radius:8px;margin:8px 0}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden}.bar i{display:block;height:100%;background:var(--pri)}
+.pal{display:flex;flex-wrap:wrap;gap:4px}.pal button{width:36px;padding:6px 0;text-align:center;font-size:13px}
+.pal .a{background:var(--pri2);border-color:var(--pri)}.pal .f{border-color:var(--warn);box-shadow:inset 0 -3px var(--warn)}.pal .c{outline:2px solid var(--pri)}
+table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+code{background:var(--bg);padding:1px 5px;border-radius:4px}textarea{width:100%;min-height:110px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+h2{margin:4px 0 10px;font-size:18px}h3{margin:12px 0 6px;font-size:15px}
+</style></head><body>
+<header><h1>Garcha NDA Coach</h1><div class="row"><small id="hd"></small><button id="inst" hidden>Install app</button><button id="shr">Share</button></div></header>
+<nav id="nav"></nav><main id="app"></main>
+<footer>Saikapian4808</footer>
+<script>
+"use strict";
+/* ============ storage ============ */
+const KEY="garchaNDA_v1";let mem=null;
+function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s)}catch(e){}return mem||{}}
+let S=Object.assign({stats:{},qs:{},tests:[],covered:{},log:[],custom:[],ca:[],lock:null},load());
+function save(){mem=S;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a}
+const today=()=>new Date().toISOString().slice(0,10);
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x.toISOString().slice(0,10)}
+const gcd=(a,b)=>b?gcd(b,a%b):Math.abs(a);
+
+/* ============ syllabus ============ */
+const SYL={
+ Maths:{Algebra:["Complex numbers","Quadratic equations","Sequences and series","Permutations and combinations","Binomial theorem","Sets and relations"],
+  Matrices:["Matrices and operations","Determinants and adjoint","Inverse and linear equations"],
+  Trigonometry:["Identities and ratios","Heights and distances","Inverse functions","Trigonometric equations"],
+  Geometry:["Straight lines","Circles","Conics","3D geometry"],
+  Calculus:["Limits and continuity","Differentiation","Applications of derivatives","Integration","Definite integrals and area","Differential equations"],
+  Vectors:["Vector algebra","Dot and cross product"],
+  Stats:["Mean, median, variance","Probability"]},
+ GAT:{English:["Grammar","Vocabulary","Comprehension","Sentence ordering"],Physics:["Mechanics","Electricity","Optics","Heat and sound","Units"],
+  Chemistry:["Periodic table","Acids, bases, salts","Everyday chemistry"],Biology:["Human body","Nutrition and diseases","Plants and cells"],
+  History:["Freedom movement","Medieval India","World history"],Polity:["Constitution","Parliament","Rights and duties"],
+  Geography:["India physical","World physical","Economic geography"],CurrentAffairs:["Defence","Science and space","Awards and events","International","Polity and economy","Environment"]}};
+const GKW={Physics:25,Chemistry:15,Biology:10,HistPolity:20,Geography:20,CurrentAffairs:10};
+const UW={Algebra:20,Calculus:20,Trigonometry:18,Stats:14,Geometry:12,Vectors:8,Matrices:8};
+
+/* ============ maths generators (answers computed by brute force loops) ============ */
+const fmt=n=>Number.isInteger(n)?String(n):String(+n.toFixed(3));
+function mk(correct,wrongs,fm){fm=fm||fmt;const set=[correct];for(const w of wrongs){if(!set.some(x=>x===w))set.push(w)}
+ let k=1;while(set.length<4){const c=correct+(k%2?k:-k)*(Math.abs(correct)>20?Math.ceil(Math.abs(correct)/10):1);k++;if(!set.some(x=>x===c))set.push(c)}
+ const opts=shuffle(set.slice(0,4));return{o:opts.map(fm),a:opts.indexOf(correct)}}
+const sgn=(n,first)=>first?(n<0?"-":"")+(Math.abs(n)===1?"":Math.abs(n)):(n<0?" - ":" + ")+Math.abs(n);
+const poly=(a,b,c)=>{let s=(a===1?"":a)+"x²";if(b)s+=sgn(b)+"x";if(c)s+=sgn(c);return s};
+const TRI=[[3,4,5],[5,12,13],[8,15,17],[6,8,10],[7,24,25],[20,21,29]];
+const GEN={
+Algebra:[
+ ()=>{const a=rnd(1,9),d=rnd(2,6),n=rnd(10,25);let s=0;for(let k=0;k<n;k++)s+=a+k*d;
+  return{t:"Sequences and series",q:`Sum of the first ${n} terms of the AP ${a}, ${a+d}, ${a+2*d}, ... is`,...mk(s,[s+d,s-n,n*(2*a+n*d)/2]),e:`S = n/2 [2a + (n-1)d] = ${n}/2 [${2*a} + ${(n-1)*d}] = ${s}`}},
+ ()=>{const a=rnd(1,4),r=rnd(2,3),n=rnd(4,7);let t=a;for(let k=1;k<n;k++)t*=r;
+  return{t:"Sequences and series",q:`The ${n}th term of the GP ${a}, ${a*r}, ${a*r*r}, ... is`,...mk(t,[t*r,t/r,a*r*n]),e:`T = a r^(n-1) = ${a} x ${r}^${n-1} = ${t}`}},
+ ()=>{const p=rnd(1,6),q=rnd(-6,-1),a=rnd(1,3);const ans=p*p+q*q;
+  return{t:"Quadratic equations",q:`If the roots of ${poly(a,-a*(p+q),a*p*q)} = 0 are α and β, then α² + β² =`,...mk(ans,[(p+q)**2,ans+2*Math.abs(p*q),(p+q)**2+2*p*q+1]),e:`Roots are ${p} and ${q}; sum of squares = ${ans}. Shortcut: (sum)² - 2(product)`}},
+ ()=>{const n=rnd(4,8);let f=1;for(let k=2;k<n;k++)f*=k;let g=f*(n-1)*n/(n-1);
+  return{t:"Permutations and combinations",q:`In how many ways can ${n} people sit around a circular table?`,...mk(f,[f*(n-1),f*n,f/(n-1)]),e:`Circular arrangements = (n-1)! = ${n-1}! = ${f}`}},
+ ()=>{const n=rnd(6,12),r=rnd(2,4);const C=[];for(let i=0;i<=n;i++){C[i]=[1];for(let j=1;j<=i;j++)C[i][j]=(C[i-1][j-1]||0)+(C[i-1][j]||0)}
+  const v=C[n][r];return{t:"Permutations and combinations",q:`Value of ${n}C${r} is`,...mk(v,[C[n][r+1],C[n+1]?C[n+1][r]:v+n,v+n]),e:`${n}C${r} = ${v}`}},
+ ()=>{const n=rnd(6,15);let c=0;for(let i=0;i<n;i++)for(let j=i+1;j<n;j++)if(!((j-i)===1||(j-i)===n-1))c++;
+  return{t:"Permutations and combinations",q:`Number of diagonals of a polygon with ${n} sides is`,...mk(c,[c+n,n*(n-1)/2,c-n]),e:`n(n-3)/2 = ${n}x${n-3}/2 = ${c}`}},
+ ()=>{const n=rnd(5,10);let s=0;for(let k=0;k<=n;k+=2){let c=1;for(let i=1;i<=k;i++)c=c*(n-i+1)/i;s+=c}
+  return{t:"Binomial theorem",q:`${n}C0 + ${n}C2 + ${n}C4 + ... (all even-indexed) equals`,...mk(s,[2**n,s*2+1,s-1]),e:`Even-index sum = 2^(n-1) = 2^${n-1} = ${s}`}}],
+Matrices:[
+ ()=>{const D=rnd(2,5);return{t:"Determinants and adjoint",q:`For a 3x3 matrix A with |A| = ${D}, the value of |adj A| is`,...mk(D*D,[D*D*D,2*D,D]),e:`|adj A| = |A|^(n-1) = ${D}^2 = ${D*D}`}},
+ ()=>{const D=rnd(2,4),k=rnd(2,3);return{t:"Determinants and adjoint",q:`For a 3x3 matrix A with |A| = ${D}, the value of |${k}A| is`,...mk(k**3*D,[k*D,k*k*D,k**3*D+k]),e:`|kA| = k^n |A| = ${k}^3 x ${D} = ${k**3*D}`}},
+ ()=>{const a=rnd(2,7),b=rnd(1,6),c=rnd(1,6),d=rnd(2,7);const v=a*d-b*c;return{t:"Matrices and operations",q:`Determinant of the matrix [[${a}, ${b}], [${c}, ${d}]] is`,...mk(v,[a*d+b*c,a*c-b*d,v+b]),e:`ad - bc = ${a*d} - ${b*c} = ${v}`}}],
+Trigonometry:[
+ ()=>{const [a,b]=pick([[1,1],[3,4],[5,12],[8,15],[6,8]]),m=rnd(1,3);const h=Math.hypot(a*m,b*m);
+  return{t:"Identities and ratios",q:`Maximum value of ${a*m} sin x + ${b*m} cos x is`,...mk(h,[a*m+b*m,h+1,Math.abs(a*m-b*m)]),e:`Max = sqrt(a²+b²) = ${fmt(h)}`}},
+ ()=>{const [p,b,h]=pick(TRI),w=pick([["sin A",p,h,"tan A",p,b],["cos A",b,h,"tan A",p,b],["sin A",p,h,"cos A",b,h]]);
+  const f=(x,y)=>{const g=gcd(x,y);return x/g+"/"+y/g};const ans=f(w[4],w[5]);
+  const wr=[f(w[5],w[4]),f(w[1],w[5]),f(w[2],w[4]),f(w[4],w[2])];const set=[ans];for(const x of wr)if(!set.includes(x))set.push(x);
+  let k=2;while(set.length<4){const c=ans.split("/")[0]+"/"+(+ans.split("/")[1]+k++);if(!set.includes(c))set.push(c)}
+  const o=shuffle(set.slice(0,4));return{t:"Identities and ratios",q:`If ${w[0]} = ${f(w[1],w[2])} and A is acute, then ${w[3]} =`,o,a:o.indexOf(ans),e:`Right triangle with sides ${p}, ${b}, ${h}; ${w[3]} = ${ans}`}},
+ ()=>{const k=rnd(2,20);return{t:"Heights and distances",q:`The angle of elevation of the top of a tower from a point ${k}√3 m from its foot is 30°. Height of the tower (m) is`,...mk(k,[k*3,k*2,k*Math.sqrt(3)].map(x=>Math.round(x*1000)/1000)),e:`h = d tan30° = ${k}√3 x 1/√3 = ${k}`}}],
+Geometry:[
+ ()=>{const [A,B,h]=pick(TRI.slice(0,3).map(t=>[t[0],t[1],t[2]])),x1=rnd(-5,5),y1=rnd(-5,5),k=rnd(1,6);const C=h*k-(A*x1+B*y1);
+  return{t:"Straight lines",q:`Distance of the point (${x1}, ${y1}) from the line ${A}x + ${B}y ${C<0?"-":"+"} ${Math.abs(C)} = 0 is`,...mk(k,[k+1,k*h,k+2]),e:`|${A}(${x1}) + ${B}(${y1}) + (${C})| / ${h} = ${h*k}/${h} = ${k}`}},
+ ()=>{const x1=rnd(-4,4),y1=rnd(-4,4),dx=rnd(1,4),m=rnd(-4,4)||2;const x2=x1+dx,y2=y1+m*dx;
+  return{t:"Straight lines",q:`Slope of the line joining (${x1}, ${y1}) and (${x2}, ${y2}) is`,...mk(m,[-m,m+1,dx]),e:`(y2-y1)/(x2-x1) = ${y2-y1}/${dx} = ${m}`}},
+ ()=>{const a=rnd(1,6),b=rnd(1,6),c=rnd(-5,5);const s=`(${a}, ${b})`;const w=[`(${-a}, ${b})`,`(${b}, ${a})`,`(${a}, ${-b})`];const set=[s];w.forEach(x=>{if(!set.includes(x))set.push(x)});let k=1;while(set.length<4)set.push(`(${a+k}, ${b+k++})`);const o=shuffle(set.slice(0,4));
+  return{t:"Circles",q:`The centre of the circle x² + y² ${sgn(-2*a)}x ${sgn(-2*b)}y ${sgn(c)} = 0 is`,o,a:o.indexOf(s),e:`For x²+y²+2gx+2fy+c=0 centre is (-g, -f) = ${s}`}}],
+Calculus:[
+ ()=>{const a=rnd(1,4),b=rnd(1,5),c=rnd(1,6),x0=rnd(1,4);const v=3*a*x0*x0+2*b*x0+c;
+  return{t:"Differentiation",q:`If f(x) = ${a}x³ + ${b}x² + ${c}x, then f'(${x0}) =`,...mk(v,[a*x0**3+b*x0**2+c*x0,6*a*x0+2*b,v+x0]),e:`f'(x) = ${3*a}x² + ${2*b}x + ${c}; at x=${x0}: ${v}`}},
+ ()=>{const a=rnd(1,5),b=rnd(1,5),k=rnd(1,5);const v=a*k*k+b*k;
+  return{t:"Definite integrals and area",q:`Value of the integral of (${2*a}x + ${b}) dx from 0 to ${k} is`,...mk(v,[v+k,a*k*k,2*a*k+b]),e:`[${a}x² + ${b}x] from 0 to ${k} = ${v}`}},
+ ()=>{const a=rnd(1,8);return{t:"Limits and continuity",q:`Limit as x tends to ${a} of (x² - ${a*a})/(x - ${a}) is`,...mk(2*a,[a,a*a,0]),e:`(x-${a})(x+${a})/(x-${a}) = x+${a} -> ${2*a}`}}],
+Vectors:[
+ ()=>{const u=[rnd(-4,5),rnd(-4,5),rnd(-4,5)],v=[rnd(-4,5),rnd(-4,5),rnd(-4,5)];let d=0;for(let i=0;i<3;i++)d+=u[i]*v[i];
+  return{t:"Dot and cross product",q:`The dot product of (${u.join(", ")}) and (${v.join(", ")}) is`,...mk(d,[d+u[0],-d,u[0]*v[0]+u[1]*v[1]-u[2]*v[2]]),e:`Sum of component products = ${d}`}},
+ ()=>{const [a,b,c]=pick([[1,2,2],[2,3,6],[2,6,9],[4,4,7],[1,4,8]]),k=rnd(1,3);
+  return{t:"Vector algebra",q:`Magnitude of the vector ${a*k}i + ${b*k}j + ${c*k}k is`,...mk(Math.sqrt(a*a+b*b+c*c)*k,[a*k+b*k+c*k,(a+b+c)*k-1,Math.sqrt(a*a+b*b+c*c)*k+1]),e:`sqrt(${(a*k)**2}+${(b*k)**2}+${(c*k)**2}) = ${Math.sqrt(a*a+b*b+c*c)*k}`}}],
+Stats:[
+ ()=>{const v=rnd(2,12),k=rnd(2,4),c=rnd(1,9);return{t:"Mean, median, variance",q:`If the variance of x is ${v}, the variance of ${k}x + ${c} is`,...mk(k*k*v,[k*v,k*k*v+c,k*v+c]),e:`Var(kx+c) = k² Var(x) = ${k*k*v}`}},
+ ()=>{const s=rnd(3,11);const fav=[];for(let i=1;i<=6;i++)for(let j=1;j<=6;j++)if(i+j===s)fav.push(1);const n=fav.length,g=gcd(n,36);const ans=n/g+"/"+36/g;
+  const set=[ans,(n+1)/gcd(n+1,36)+"/"+36/gcd(n+1,36),n/g+"/"+(36/g+1)];[`1/6`,`1/12`,`5/36`,`1/9`].forEach(x=>{if(!set.includes(x))set.push(x)});const o=shuffle(set.slice(0,4));if(!o.includes(ans)){o[0]=ans}
+  return{t:"Probability",q:`Two fair dice are thrown. Probability that the sum is ${s} is`,o,a:o.indexOf(ans),e:`${n} favourable outcomes out of 36 = ${ans}`}},
+ ()=>{const a=[rnd(2,20),rnd(2,20),rnd(2,20),rnd(2,20)];let s=a.reduce((x,y)=>x+y,0);const last=5*rnd(Math.ceil(s/5)+1,Math.ceil(s/5)+6)-s;a.push(last);s+=last;const m=s/5;
+  return{t:"Mean, median, variance",q:`Mean of ${a.join(", ")} is`,...mk(m,[m+1,m-1,m+2]),e:`Sum ${s} / 5 = ${m}`}}]};
+function genMaths(unit){const u=unit||weighted(UW);const g=pick(GEN[u]);const r=g();return Object.assign({id:null,s:"Maths",u:u,gen:true},r,{topic:r.t})}
+function weighted(w){let t=0;for(const k in w)t+=w[k];let r=Math.random()*t;for(const k in w){r-=w[k];if(r<=0)return k}return Object.keys(w)[0]}
+
+/* ============ static GK / English bank ============ */
+const B=[];function A(s,u,q,o,a,e){B.push({id:"s"+B.length,s,u,q,o,a,e:e||""})}
+A("Physics","Units","SI unit of force is",["Joule","Newton","Watt","Pascal"],1,"F = ma, kg m/s² = newton");
+A("Physics","Optics","Speed of light in vacuum is nearest to",["3 x 10^6 m/s","3 x 10^8 m/s","3 x 10^10 m/s","3 x 10^5 m/s"],1);
+A("Physics","Units","SI unit of power is",["Watt","Joule","Newton","Tesla"],0);
+A("Physics","Mechanics","Escape velocity from Earth's surface is about",["7.9 km/s","11.2 km/s","9.8 km/s","15 km/s"],1,"sqrt(2gR) = 11.2 km/s");
+A("Physics","Optics","Short-sightedness (myopia) is corrected using a",["Convex lens","Concave lens","Cylindrical lens","Bifocal lens"],1);
+A("Physics","Optics","Rear-view mirrors in vehicles are",["Plane","Concave","Convex","Cylindrical"],2,"Convex gives wide field of view");
+A("Physics","Electricity","V = IR is known as",["Faraday's law","Ohm's law","Lenz's law","Coulomb's law"],1);
+A("Physics","Heat and sound","Which substance has the highest specific heat among common liquids?",["Mercury","Water","Alcohol","Kerosene"],1);
+A("Physics","Heat and sound","Sound cannot travel through",["Water","Steel","Vacuum","Air"],2);
+A("Physics","Units","Dimensional formula of work is",["MLT^-2","ML²T^-2","ML²T^-3","MLT^-1"],1);
+A("Physics","Mechanics","Newton's first law of motion is also called the law of",["Momentum","Inertia","Action","Gravitation"],1);
+A("Physics","Units","SI unit of frequency is",["Hertz","Tesla","Weber","Henry"],0);
+A("Physics","Optics","Which colour of visible light has the longest wavelength?",["Violet","Green","Red","Blue"],2);
+A("Physics","Electricity","A generator converts",["Electrical to mechanical energy","Mechanical to electrical energy","Heat to light","Chemical to electrical energy"],1);
+A("Physics","Mechanics","Orbital speed of a satellite near Earth is about",["7.9 km/s","11.2 km/s","3 km/s","30 km/s"],0);
+A("Chemistry","Periodic table","Atomic number of carbon is",["4","6","8","12"],1);
+A("Chemistry","Acids, bases, salts","pH of pure water at 25°C is",["0","7","10","14"],1);
+A("Chemistry","Everyday chemistry","Chemical formula of common salt is",["KCl","NaCl","CaCl2","Na2CO3"],1);
+A("Chemistry","Everyday chemistry","Gas dissolved in soda water is",["Oxygen","Carbon dioxide","Nitrogen","Hydrogen"],1);
+A("Chemistry","Periodic table","Most abundant gas in Earth's atmosphere is",["Oxygen","Nitrogen","Argon","Carbon dioxide"],1,"About 78% nitrogen");
+A("Chemistry","Periodic table","Lightest element is",["Helium","Hydrogen","Lithium","Oxygen"],1);
+A("Chemistry","Everyday chemistry","Rusting of iron is an example of",["Reduction","Oxidation","Sublimation","Neutralisation"],1);
+A("Chemistry","Everyday chemistry","Chemical name of baking soda is",["Sodium carbonate","Sodium bicarbonate","Sodium hydroxide","Calcium carbonate"],1);
+A("Chemistry","Periodic table","Which is a noble gas?",["Neon","Nitrogen","Oxygen","Chlorine"],0);
+A("Chemistry","Periodic table","Hardest naturally occurring substance is",["Quartz","Diamond","Graphite","Corundum"],1);
+A("Chemistry","Periodic table","Usual valency of oxygen is",["1","2","3","4"],1);
+A("Chemistry","Everyday chemistry","Gas commonly used in fire extinguishers is",["Oxygen","Carbon dioxide","Hydrogen","Methane"],1);
+A("Biology","Nutrition and diseases","Deficiency of vitamin C causes",["Rickets","Scurvy","Beriberi","Night blindness"],1);
+A("Biology","Human body","Haemoglobin is found in",["White blood cells","Red blood cells","Platelets","Plasma"],1);
+A("Biology","Plants and cells","Powerhouse of the cell is the",["Nucleus","Mitochondria","Ribosome","Golgi body"],1);
+A("Biology","Human body","Largest organ of the human body is",["Liver","Skin","Lungs","Brain"],1);
+A("Biology","Nutrition and diseases","Vitamin synthesised in skin with sunlight is",["A","C","D","K"],2);
+A("Biology","Human body","Universal blood donor group is",["AB positive","O negative","A positive","B negative"],1);
+A("Biology","Plants and cells","Gas absorbed by plants during photosynthesis is",["Oxygen","Carbon dioxide","Nitrogen","Methane"],1);
+A("Biology","Human body","Insulin is secreted by the",["Liver","Pancreas","Kidney","Thyroid"],1);
+A("History","Freedom movement","Battle of Plassey was fought in",["1757","1764","1857","1919"],0);
+A("History","Freedom movement","Jallianwala Bagh massacre took place in",["1915","1919","1922","1930"],1);
+A("History","Freedom movement","The Quit India Movement was launched in",["1930","1940","1942","1946"],2);
+A("History","Freedom movement","'Do or Die' was the slogan of",["Subhas Bose","Gandhi","Nehru","Tilak"],1,"Quit India, 1942");
+A("History","Freedom movement","First Governor-General of independent India was",["C. Rajagopalachari","Lord Mountbatten","Lord Wavell","Lord Linlithgow"],1);
+A("History","Medieval India","The Mughal empire in India was founded by",["Akbar","Babur","Humayun","Shah Jahan"],1);
+A("History","Medieval India","First Battle of Panipat was fought in",["1526","1556","1761","1576"],0);
+A("History","Freedom movement","The Revolt of 1857 began at",["Delhi","Meerut","Kanpur","Jhansi"],1);
+A("History","Freedom movement","Indian National Congress was founded in",["1857","1885","1905","1919"],1);
+A("History","Freedom movement","Dandi March took place in",["1920","1930","1942","1919"],1);
+A("Polity","Constitution","The Constitution of India came into force on",["15 Aug 1947","26 Nov 1949","26 Jan 1950","2 Oct 1950"],2);
+A("Polity","Constitution","Chairman of the Drafting Committee of the Constitution was",["Rajendra Prasad","B. R. Ambedkar","Nehru","Patel"],1);
+A("Polity","Rights and duties","Fundamental Rights are in which Part of the Constitution?",["II","III","IV","IVA"],1);
+A("Polity","Rights and duties","Right to life and personal liberty is under Article",["14","19","21","32"],2);
+A("Polity","Parliament","Term of the President of India is",["4 years","5 years","6 years","Till 65 years"],1);
+A("Polity","Parliament","Minimum age to contest Lok Sabha election is",["21","25","30","35"],1);
+A("Polity","Parliament","Chairperson of the Rajya Sabha is the",["President","Vice-President","Prime Minister","Speaker"],1);
+A("Polity","Rights and duties","Directive Principles of State Policy are in Part",["III","IV","IVA","V"],1);
+A("Polity","Rights and duties","Fundamental Duties were added by the amendment",["24th","42nd","44th","73rd"],1);
+A("Polity","Parliament","A Money Bill can be introduced only in the",["Rajya Sabha","Lok Sabha","Either House","Joint sitting"],1);
+A("Geography","India physical","Number of Indian states through which the Tropic of Cancer passes",["6","8","10","12"],1);
+A("Geography","India physical","Largest Indian state by area is",["Madhya Pradesh","Rajasthan","Maharashtra","Uttar Pradesh"],1);
+A("Geography","World physical","Largest ocean of the world is the",["Atlantic","Indian","Pacific","Arctic"],2);
+A("Geography","World physical","Deepest known point in the oceans is the",["Puerto Rico Trench","Mariana Trench","Java Trench","Tonga Trench"],1);
+A("Geography","World physical","Capital of Australia is",["Sydney","Melbourne","Canberra","Perth"],2);
+A("Geography","India physical","River Ganga is formed at Devprayag by the confluence of Alaknanda and",["Yamuna","Bhagirathi","Gandak","Kosi"],1);
+A("Geography","Economic geography","Black soil is best suited for",["Rice","Cotton","Tea","Coffee"],1);
+A("Geography","India physical","Standard Meridian of India is",["77.5°E","82.5°E","85.5°E","80°E"],1);
+A("Geography","World physical","Largest hot desert in the world is the",["Gobi","Sahara","Kalahari","Thar"],1);
+A("Geography","World physical","Smallest continent by area is",["Europe","Australia","Antarctica","South America"],1);
+A("English","Vocabulary","Synonym of 'benevolent' is",["Cruel","Kind","Angry","Lazy"],1);
+A("English","Vocabulary","Antonym of 'ancient' is",["Old","Modern","Historic","Antique"],1);
+A("English","Grammar","He ___ to school every day.",["go","goes","going","gone"],1);
+A("English","Vocabulary","One word for 'a person who loves books' is",["Bibliophile","Philatelist","Linguist","Cartographer"],0);
+A("English","Vocabulary","Choose the correct spelling",["Neccessary","Necessary","Necesary","Neccesary"],1);
+A("English","Vocabulary","'A piece of cake' means",["A dessert","Very easy","Very costly","Dangerous"],1);
+A("English","Grammar","She is good ___ mathematics.",["in","at","on","for"],1);
+A("English","Grammar","Plural of 'child' is",["Childs","Children","Childes","Childrens"],1);
+A("English","Grammar","Past tense of 'choose' is",["Chosen","Chose","Choosed","Chooses"],1);
+A("English","Vocabulary","Synonym of 'abundant' is",["Scarce","Plentiful","Rare","Small"],1);
+A("English","Vocabulary","Antonym of 'brave' is",["Bold","Cowardly","Strong","Fearless"],1);
+A("English","Grammar","He is ___ honest man.",["a","an","the","no article"],1);
+let REMOTE=[],FEED={updated:null,items:[]};
+function hsh(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))|0;return (h>>>0).toString(36)}
+const okQ=x=>x&&x.s&&x.q&&Array.isArray(x.o)&&x.o.length===4&&Number.isInteger(x.a)&&x.a>=0&&x.a<4;
+function allStatic(){return B.concat(REMOTE.filter(okQ).map(c=>Object.assign({},c,{u:c.u||"General",e:c.e||"",id:"r"+hsh(c.q)})),(S.custom||[]).filter(okQ).map(c=>Object.assign({},c,{u:c.u||"General",e:c.e||"",id:"c"+hsh(c.q)})))}
+async function getJSON(path,ck){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),5000);
+ try{const r=await fetch(path,{cache:"no-cache",signal:ctl.signal});if(!r.ok)throw 0;const j=await r.json();try{localStorage.setItem(KEY+ck,JSON.stringify(j))}catch(e){}return j}
+ catch(e){try{const c=localStorage.getItem(KEY+ck);if(c)return JSON.parse(c)}catch(_){}return null}finally{clearTimeout(t)}}
+async function loadData(){const [f,q]=await Promise.all([getJSON("data/current_affairs.json","_feed"),getJSON("data/questions.json","_qb")]);
+ if(f&&Array.isArray(f.items))FEED=f;if(Array.isArray(q))REMOTE=q;else if(q&&Array.isArray(q.questions))REMOTE=q.questions}
+const gkGroup=q=>q.s==="History"||q.s==="Polity"?"HistPolity":q.s;
+
+/* ============ shortcuts: live verification (formula vs brute force) ============ */
+const rd=x=>x*Math.PI/180;
+const SH=[
+{n:"Sum of sines in AP",sub:"Trigonometry",rule:"sin a + sin(a+d) + ... (n terms) = [sin(nd/2) / sin(d/2)] x sin(a + (n-1)d/2)",p:"sin10° + sin20° + ... + sin80°",
+ f:()=>Math.sin(rd(40))/Math.sin(rd(5))*Math.sin(rd(45)),b:()=>{let s=0;for(let k=1;k<=8;k++)s+=Math.sin(rd(10*k));return s},use:"Any run of equally spaced angles. The result is a ratio times the sine of the middle (average) angle.",time:"15 s vs 90 s"},
+{n:"Sum of cosines in AP",sub:"Trigonometry",rule:"cos a + cos(a+d) + ... = [sin(nd/2) / sin(d/2)] x cos(a + (n-1)d/2)",p:"cos20° + cos60° + cos100°",
+ f:()=>Math.sin(rd(60))/Math.sin(rd(20))*Math.cos(rd(60)),b:()=>Math.cos(rd(20))+Math.cos(rd(60))+Math.cos(rd(100)),use:"Same as above with cosine",time:"15 s vs 80 s"},
+{n:"Sum to product",sub:"Trigonometry",rule:"sin A + sin B = 2 sin((A+B)/2) cos((A-B)/2)",p:"sin75° + sin15° (= √6/2)",f:()=>2*Math.sin(rd(45))*Math.cos(rd(30)),b:()=>Math.sin(rd(75))+Math.sin(rd(15)),use:"Combine two sines or cosines into one product",time:"10 s vs 60 s"},
+{n:"Maximum of a sin x + b cos x",sub:"Trigonometry",rule:"Max = +√(a²+b²), Min = -√(a²+b²)",p:"Max of 3 sin x + 4 cos x",f:()=>5,b:()=>{let m=-9;for(let t=0;t<6.3;t+=0.0001)m=Math.max(m,3*Math.sin(t)+4*Math.cos(t));return m},tol:1e-6,use:"Range and extremum questions",time:"5 s vs 60 s"},
+{n:"Heights and distances, two points",sub:"Trigonometry",rule:"Elevation a (nearer), b (farther, smaller), points d apart on a line: h = d / (cot b - cot a)",p:"Elevations 60° and 30°, points 20 m apart. Find h (= 10√3)",
+ f:()=>20/(1/Math.tan(rd(30))-1/Math.tan(rd(60))),b:()=>{let lo=1,hi=100;for(let i=0;i<80;i++){const h=(lo+hi)/2;const d=h/Math.tan(rd(30))-h/Math.tan(rd(60));d<20?lo=h:hi=h}return lo},tol:1e-6,use:"Two observations of a tower",time:"20 s vs 90 s"},
+{n:"Cube roots of unity",sub:"Algebra",rule:"1 + w + w² = 0, w³ = 1, so 1 + w = -w², 1 + w² = -w",p:"(1 + w)³ = -w⁶ = -1",f:()=>-1,b:()=>{const re=Math.cos(2*Math.PI/3),im=Math.sin(2*Math.PI/3);let r=1,i=0;for(let k=0;k<3;k++){const nr=r*(1+re)-i*im,ni=r*im+i*(1+re);r=nr;i=ni}return r},tol:1e-9,use:"Complex-number simplification",time:"10 s vs 60 s"},
+{n:"Sum and product of roots",sub:"Algebra",rule:"sum = -b/a, product = c/a; α²+β² = (sum)² - 2(product)",p:"2x² - 7x + 3 = 0: α² + β²",f:()=>(7/2)**2-2*1.5,b:()=>{const D=Math.sqrt(49-24),r1=(7+D)/4,r2=(7-D)/4;return r1*r1+r2*r2},tol:1e-9,use:"Any symmetric expression of roots",time:"15 s vs 60 s"},
+{n:"Circular permutations",sub:"Algebra",rule:"n objects round a table: (n-1)!",p:"6 people at a round table",f:()=>120,b:()=>{const seen=new Set();const perm=(a,c)=>{if(!a.length){let best=null;for(let i=0;i<c.length;i++){const s=c.slice(i).concat(c.slice(0,i)).join("");if(best===null||s<best)best=s}seen.add(best);return}a.forEach((x,i)=>perm(a.filter((_,j)=>j!==i),c.concat(x)))};perm([0,1,2,3,4,5],[]);return seen.size},use:"Seating and necklace questions",time:"5 s vs 3 min"},
+{n:"Determinant of adjoint and kA",sub:"Matrices",rule:"|adj A| = |A|^(n-1); |kA| = k^n |A|",p:"3x3, |A| = 2: |adj A| + |2A| = 4 + 16",f:()=>4+16,b:()=>{const A=[[1,1,0],[0,1,1],[1,0,1]];const det=M=>M[0][0]*(M[1][1]*M[2][2]-M[1][2]*M[2][1])-M[0][1]*(M[1][0]*M[2][2]-M[1][2]*M[2][0])+M[0][2]*(M[1][0]*M[2][1]-M[1][1]*M[2][0]);const d=det(A);const adj=[0,1,2].map(i=>[0,1,2].map(j=>{const r=[0,1,2].filter(x=>x!==j),c=[0,1,2].filter(x=>x!==i);return((i+j)%2?-1:1)*(A[r[0]][c[0]]*A[r[1]][c[1]]-A[r[0]][c[1]]*A[r[1]][c[0]])}));return det(adj)+det(A.map(r=>r.map(x=>2*x)))},tol:1e-9,use:"Matrix property questions. Tested on a real 3x3 matrix with |A| = 2",time:"5 s vs 3 min"},
+{n:"Integral symmetry 0 to a",sub:"Calculus",rule:"∫f(x)dx = ∫f(a-x)dx on 0..a, so sin^n/(sin^n + cos^n) over 0..π/2 = π/4",p:"∫ sin³x/(sin³x + cos³x) dx, 0 to π/2",f:()=>Math.PI/4,b:()=>{const N=100000,h=Math.PI/2/N;let s=0;for(let i=0;i<=N;i++){const x=i*h,y=Math.sin(x)**3/(Math.sin(x)**3+Math.cos(x)**3);s+=y*(i===0||i===N?1:i%2?4:2)}return s*h/3},tol:1e-8,use:"Definite integrals with symmetric integrand",time:"10 s vs impossible by hand"},
+{n:"Point to line distance",sub:"Geometry",rule:"d = |a x1 + b y1 + c| / √(a² + b²)",p:"Distance of (3, 4) from 3x - 4y + 5 = 0",f:()=>Math.abs(3*3-4*4+5)/5,b:()=>{let m=1e9;for(let x=-20;x<=20;x+=0.0005){const y=(3*x+5)/4;m=Math.min(m,Math.hypot(3-x,4-y))}return m},tol:1e-6,use:"Lines, tangents to circles",time:"10 s vs 2 min"},
+{n:"Variance under scaling",sub:"Statistics",rule:"Var(kx + c) = k² Var(x)",p:"x = 2,4,6,8,10; Var(3x+5)",f:()=>9*8,b:()=>{const y=[2,4,6,8,10].map(x=>3*x+5),m=y.reduce((a,b)=>a+b)/5;return y.reduce((s,v)=>s+(v-m)**2,0)/5},use:"Change of origin or scale",time:"5 s vs 60 s"},
+{n:"Diagonals of a polygon",sub:"Algebra",rule:"n(n-3)/2",p:"9-sided polygon",f:()=>27,b:()=>{let c=0;for(let i=0;i<9;i++)for(let j=i+1;j<9;j++)if(j-i!==1&&j-i!==8)c++;return c},use:"Polygon counting",time:"5 s vs 60 s"},
+{n:"Even-indexed binomial sum",sub:"Algebra",rule:"C(n,0)+C(n,2)+... = 2^(n-1)",p:"7C0 + 7C2 + 7C4 + 7C6",f:()=>64,b:()=>{let s=0;for(let k=0;k<=7;k+=2){let c=1;for(let i=1;i<=k;i++)c=c*(7-i+1)/i;s+=c}return s},use:"Binomial sums",time:"5 s vs 90 s"},
+{n:"Sum of AP",sub:"Algebra",rule:"S = n/2 [2a + (n-1)d]",p:"First 20 terms of 3, 7, 11, ...",f:()=>10*(6+19*4),b:()=>{let s=0;for(let k=0;k<20;k++)s+=3+4*k;return s},use:"Series",time:"10 s vs 90 s"},
+{n:"Projectile range",sub:"Physics",rule:"R = u² sin2θ / g; maximum at 45°",p:"u = 20 m/s, θ = 30°, g = 10",f:()=>400*Math.sin(rd(60))/10,b:()=>{let x=0,y=0,vx=20*Math.cos(rd(30)),vy=20*Math.sin(rd(30));const dt=1e-5;while(y>=0){x+=vx*dt;y+=vy*dt;vy-=10*dt}return x},tol:1e-3,use:"Projectile numericals",time:"10 s vs 90 s"},
+{n:"Escape vs orbital speed",sub:"Physics",rule:"v_escape = √2 x v_orbit",p:"v_orbit = 7.9 km/s; escape speed",f:()=>Math.SQRT2*7.9,b:()=>Math.sqrt(2*7.9*7.9),tol:1e-9,use:"Gravitation",time:"5 s vs 40 s"},
+{n:"Two resistors in parallel",sub:"Physics",rule:"R = R1 R2 / (R1 + R2)",p:"6 Ω and 3 Ω in parallel",f:()=>18/9,b:()=>1/(1/6+1/3),use:"Circuits",time:"5 s vs 30 s"},
+{n:"Pendulum scaling",sub:"Physics",rule:"T ∝ √l; 4x length doubles T",p:"T = 2 s; length x4",f:()=>4,b:()=>{const g=9.8,l1=g*Math.pow(2/(2*Math.PI),2);return 2*Math.PI*Math.sqrt(4*l1/g)},tol:1e-9,use:"SHM",time:"5 s vs 30 s"},
+{n:"Lens formula",sub:"Physics",rule:"1/v - 1/u = 1/f (u negative); v = uf/(u+f) for real object",p:"f = +10 cm, object at 30 cm. Find v",f:()=>30*10/(30-10),b:()=>1/(1/10+1/(-30)),tol:1e-9,use:"Optics",time:"10 s vs 60 s"}];
+
+
+/* ============ spaced repetition (Leitner) ============ */
+const BOX=[1,2,4,8,16,32];
+function srRecord(id,ok){if(!id)return;const c=S.qs[id]||{box:0,due:today()};c.box=ok?Math.min(5,c.box+1):0;c.due=addDays(today(),BOX[c.box]);S.qs[id]=c}
+function stat(s,u,ok){const k=s+"|"+u;const o=S.stats[k]||(S.stats[k]={a:0,c:0});o.a++;if(ok)o.c++;
+ const t=today();let l=S.log.find(x=>x.d===t);if(!l){l={d:t,a:0,c:0};S.log.push(l)}l.a++;if(ok)l.c++}
+
+/* ============ quiz runner (shared) ============ */
+let R=null;// {qs,ans,flag,i,mode,end,timer,done,cfg,t0}
+function startRun(qs,cfg){R={qs,ans:qs.map(()=>null),flag:qs.map(()=>false),i:0,done:false,cfg:cfg||{},t0:Date.now(),qt:qs.map(()=>0),qs0:Date.now()};
+ if(cfg&&cfg.mins){R.end=Date.now()+cfg.mins*60000;R.timer=setInterval(tick,1000)}renderRun()}
+function tick(){if(!R||R.done){return}const left=R.end-Date.now();const el=$("tm");if(el){const s=Math.max(0,Math.floor(left/1000));el.textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0")}if(left<=0)finishRun()}
+function renderRun(){if(!R)return;const q=R.qs[R.i],c=R.cfg,exam=!!c.mins;
+ const sel=R.ans[R.i];const instant=!exam&&sel!==null;
+ let h=`<div class="card"><div class="row" style="justify-content:space-between"><div><span class="tag">${esc(q.s)}</span><span class="tag">${esc(q.topic||q.u)}</span> <span class="mut">Q ${R.i+1} / ${R.qs.length}</span></div>${exam?`<b id="tm"></b>`:""}</div>
+ <p style="font-size:16px;margin:12px 0">${esc(q.q)}</p>`;
+ q.o.forEach((o,i)=>{let cl="opt";if(instant){if(i===q.a)cl+=" right";else if(i===sel)cl+=" wrong"}else if(i===sel)cl+=" sel";
+  h+=`<button class="${cl}" data-o="${i}" ${instant?"disabled":""}>${"ABCD"[i]}. ${esc(o)}</button>`});
+ if(instant)h+=`<div class="warn"><b>${sel===q.a?"Correct.":"Answer: "+"ABCD"[q.a]+"."}</b> ${esc(q.e||"")}</div>`;
+ h+=`<div class="row" style="margin-top:10px"><button id="pv" ${R.i?"":"disabled"}>Previous</button><button id="nx" class="p">${R.i===R.qs.length-1?"Finish":"Next"}</button>`;
+ if(exam)h+=`<button id="fl">${R.flag[R.i]?"Unmark":"Mark for review"}</button><button id="cl">Clear answer</button>`;
+ else h+=`<button id="fin">End session</button>`;
+ h+=`</div></div>`;
+ if(exam){h+=`<div class="card"><div class="pal">`+R.qs.map((_,i)=>`<button data-p="${i}" class="${R.ans[i]!==null?"a":""} ${R.flag[i]?"f":""} ${i===R.i?"c":""}">${i+1}</button>`).join("")+`</div><div class="row" style="margin-top:8px"><button id="fin" class="p">Submit test</button><span class="mut">Answered ${R.ans.filter(x=>x!==null).length} of ${R.qs.length}</span></div></div>`}
+ $("app").innerHTML=h;tick();
+ document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{if(R.ans[R.i]!==null&&!exam)return;R.ans[R.i]=+b.dataset.o;if(!exam)R.qt[R.i]=(Date.now()-R.qs0)/1000;renderRun()});
+ document.querySelectorAll("[data-p]").forEach(b=>b.onclick=()=>{R.i=+b.dataset.p;renderRun()});
+ $("pv").onclick=()=>{R.i--;R.qs0=Date.now();renderRun()};
+ $("nx").onclick=()=>{if(R.i===R.qs.length-1){finishRun()}else{R.i++;R.qs0=Date.now();renderRun()}};
+ $("fin").onclick=()=>{if(!exam||confirm("Submit the test now?"))finishRun()};
+ if(exam){$("fl").onclick=()=>{R.flag[R.i]=!R.flag[R.i];renderRun()};$("cl").onclick=()=>{R.ans[R.i]=null;renderRun()}}}
+function finishRun(){if(!R||R.done)return;R.done=true;if(R.timer)clearInterval(R.timer);
+ const c=R.cfg;let cor=0,wr=0,un=0;const unit={};
+ R.qs.forEach((q,i)=>{const a=R.ans[i];const k=q.s+"|"+(q.topic||q.u);unit[k]=unit[k]||{a:0,c:0,w:0};
+  if(a===null){un++;return}const ok=a===q.a;ok?cor++:wr++;unit[k].a++;ok?unit[k].c++:unit[k].w++;stat(q.s,q.topic||q.u,ok);srRecord(q.id,ok)});
+ const pm=c.pm||0,neg=pm/3,score=cor*pm-wr*neg,max=R.qs.length*pm;
+ const res={d:today(),name:c.name,n:R.qs.length,cor,wr,un,score:+score.toFixed(2),max,cut:c.cut?+(max*0.25).toFixed(1):0,secs:Math.round((Date.now()-R.t0)/1000),kind:c.kind||"practice"};
+ if(c.kind==="test")S.tests.push(res);
+ if(c.kind==="recall")S.recallDone=today();
+ save();showResult(res,unit)}
+function showResult(r,unit){
+ const exam=r.kind==="test";let h=`<div class="card"><h2>${esc(r.name)} result</h2>`;
+ if(exam){const pass=r.score>=r.cut;h+=`<p style="font-size:22px;margin:4px 0"><b>${r.score}</b> / ${r.max} <span class="${pass?"ok":"bad"}">${pass?"above":"below"} the 25% sectional minimum (${r.cut})</span></p>`}
+ h+=`<p>Correct ${r.cor} · Wrong ${r.wr} · Unattempted ${r.un} · Time ${Math.floor(r.secs/60)}m ${r.secs%60}s · Accuracy ${r.cor+r.wr?Math.round(100*r.cor/(r.cor+r.wr)):0}%</p>`;
+ if(r.kind!=="test"&&R.qt.some(x=>x>0)){const t=R.qt.filter(x=>x>0);h+=`<p class="mut">Average ${Math.round(t.reduce((a,b)=>a+b,0)/t.length)} s per question (target: 60-75 s)</p>`}
+ h+=`<table><tr><th>Topic</th><th>Right</th><th>Wrong</th></tr>`+Object.entries(unit).map(([k,v])=>`<tr><td>${esc(k.replace("|"," - "))}</td><td>${v.c}</td><td>${v.w}</td></tr>`).join("")+`</table></div>`;
+ h+=`<div class="card"><h3>Review</h3>`+R.qs.map((q,i)=>{const a=R.ans[i];return `<p><b>${i+1}.</b> ${esc(q.q)}<br>Your answer: <span class="${a===null?"mut":a===q.a?"ok":"bad"}">${a===null?"skipped":esc(q.o[a])}</span> · Correct: <b>${esc(q.o[q.a])}</b><br><span class="mut">${esc(q.e||"")}</span></p>`}).join("")+`</div><button class="p" onclick="go('home')">Back to dashboard</button>`;
+ $("app").innerHTML=h;R=null}
+
+/* ============ pages ============ */
+const P={};
+function acc(k){const o=S.stats[k];return o&&o.a?o.c/o.a:null}
+function topicStatus(k){const o=S.stats[k];if(!o||!o.a)return["Not started",0];const a=o.c/o.a;if(o.a>=15&&a>=.8)return["Mastered",a];if(o.a>=6&&a>=.6)return["Practised",a];return["Learning",a]}
+P.home=()=>{
+ const t=today(),l=S.log.find(x=>x.d===t)||{a:0,c:0};let streak=0;{let d=l.a?t:addDays(t,-1);while(S.log.find(x=>x.d===d&&x.a>0)){streak++;d=addDays(d,-1)}}
+ const due=Object.entries(S.qs).filter(([id,c])=>c.due<=t).length;
+ const last=S.tests.slice(-8);
+ let h=`<div class="grid"><div class="card"><h3>Today</h3><b style="font-size:24px">${l.a}</b> questions<br><span class="mut">${l.a?Math.round(100*l.c/l.a):0}% correct · streak ${streak} day${streak===1?"":"s"}</span></div>
+ <div class="card"><h3>Daily recall</h3>${S.recallDone===t?`<span class="ok">Done today</span>`:`<span class="warn">Not done yet</span>`}<br>Cards due: <b>${due}</b><br><button class="p" onclick="go('recall')">Start recall</button></div>
+ <div class="card"><h3>Tests taken</h3><b style="font-size:24px">${S.tests.length}</b><br><button onclick="go('tests')">Open tests</button></div></div>`;
+ h+=`<div class="card"><h3>Score trend (last tests, % of maximum)</h3>`+(last.length?last.map(x=>`<div class="row"><span style="width:150px" class="mut">${esc(x.name).slice(0,22)}</span><div class="bar" style="flex:1"><i style="width:${Math.max(0,Math.round(100*x.score/x.max))}%"></i></div><b>${Math.round(100*x.score/x.max)}%</b></div>`).join(""):`<span class="mut">No tests yet. Take a weekly test to start the trend.</span>`)+`</div>`;
+ const weak=Object.entries(S.stats).filter(([k,o])=>o.a>=5).map(([k,o])=>[k,o.c/o.a,o.a]).sort((a,b)=>a[1]-b[1]).slice(0,5);
+ h+=`<div class="card"><h3>Weakest topics (at least 5 attempts)</h3>`+(weak.length?weak.map(([k,a,n])=>`<div>${esc(k.replace("|"," - "))}: <b class="${a<.6?"bad":""}">${Math.round(100*a)}%</b> <span class="mut">(${n} attempts)</span></div>`).join(""):`<span class="mut">Appears after you practise.</span>`)+`</div>`;
+ h+=`<div class="card"><h3>Latest current affairs</h3>`+(FEED.items.length?FEED.items.slice(0,3).map(i=>`<p style="margin:6px 0"><span class="tag">${esc(i.c)}</span>${esc(i.h)}</p>`).join("")+`<button onclick="go('ca')">See all</button>`:`<span class="mut">Connect to the internet once to load the latest feed.</span>`)+`<p class="mut" style="margin-top:8px">Always confirm dates and vacancies in the official UPSC notice: <a href="https://upsc.gov.in" target="_blank" rel="noopener">upsc.gov.in</a></p></div>`;
+ h+=`<div class="card"><h3>Weekly plan</h3><table><tr><td>Mon-Fri</td><td>Daily recall (10-15 min) + 1 topic practice</td></tr><tr><td>Saturday</td><td>Weekly test: Maths (30 Q) or GAT (40 Q)</td></tr><tr><td>Sunday</td><td>Review mistakes + shortcuts drill</td></tr><tr><td>Last Sunday of month</td><td>Full Maths mock (120 Q, 2.5 h) and full GAT mock</td></tr></table></div>`;
+ return h};
+P.syllabus=()=>{let h=`<div class="card"><h2>Syllabus and progress</h2><p class="mut">Tick topics once studied. Status comes from your practice accuracy.</p></div>`;
+ for(const paper in SYL){h+=`<div class="card"><h3>${paper==="Maths"?"Mathematics (300 marks)":"GAT (600 marks)"}</h3>`;
+  for(const u in SYL[paper]){const tk=SYL[paper][u];const a=acc(paper==="Maths"?"Maths|"+u:u+"|"+"x");
+   let ok=tk.filter(t=>S.covered[u+"|"+t]).length;h+=`<details><summary><b>${u}</b> ${paper==="Maths"&&UW[u]?`<span class="tag">~${UW[u]}% of marks</span>`:""}${paper==="GAT"&&GKW[u]?`<span class="tag">${GKW[u]}% of GK</span>`:""} <span class="mut">${ok}/${tk.length} studied</span></summary>`;
+   tk.forEach(t=>{const k=(paper==="Maths"?"Maths":u)+"|"+t;const st=topicStatus(k);h+=`<div class="row" style="margin:4px 0"><label><input type="checkbox" data-cv="${esc(u+"|"+t)}" ${S.covered[u+"|"+t]?"checked":""}> ${esc(t)}</label><span class="tag">${st[0]}</span>${st[1]?`<span class="mut">${Math.round(st[1]*100)}%</span>`:""}</div>`});
+   h+=`</details>`}h+=`</div>`}return h};
+P.syllabus.after=()=>document.querySelectorAll("[data-cv]").forEach(c=>c.onchange=()=>{S.covered[c.dataset.cv]=c.checked;save()});
+P.shortcuts=()=>{let h=`<div class="card"><h2>Shortcuts and theorems</h2><p class="mut">Each shortcut is run live against a brute-force calculation. A green tick means the shortcut and the long method agree on that problem. Learn the rule, then drill it.</p><div class="row"><button class="p" id="vall">Verify all now</button><select id="fsub"><option>All</option><option>Trigonometry</option><option>Algebra</option><option>Matrices</option><option>Calculus</option><option>Geometry</option><option>Statistics</option><option>Physics</option></select></div></div><div id="shl"></div>`;return h};
+P.shortcuts.after=()=>{const f=$("fsub");const draw=()=>{$("shl").innerHTML=SH.map((s,i)=>({s,i})).filter(x=>f.value==="All"||x.s.sub===f.value).map(({s,i})=>`<div class="card"><div class="row" style="justify-content:space-between"><b>${i+1}. ${esc(s.n)}</b><span class="tag">${s.sub}</span></div><p><code>${esc(s.rule)}</code></p><p>Problem: ${esc(s.p)}<br><span class="mut">Time: ${s.time}. ${esc(s.use)}</span></p><div class="row"><button data-v="${i}">Verify</button><span id="vr${i}"></span></div></div>`).join("");document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>verify(+b.dataset.v))};
+ f.onchange=draw;draw();$("vall").onclick=()=>{f.value="All";draw();SH.forEach((_,i)=>verify(i))}};
+function verify(i){const s=SH[i],a=s.f(),b=s.b();const tol=s.tol||1e-9;const ok=Math.abs(a-b)<=tol*Math.max(1,Math.abs(b));const el=$("vr"+i);if(el)el.innerHTML=`<span class="${ok?"ok":"bad"}">${ok?"✓ matches":"✗ mismatch"}</span> shortcut = ${+a.toFixed(6)} · brute force = ${+b.toFixed(6)}`;return ok}
+P.practice=()=>{const mt=Object.keys(GEN),gs=[...new Set(allStatic().map(q=>q.s))];
+ return `<div class="card"><h2>Practice</h2><p class="mut">Instant feedback after each answer. Maths questions are generated fresh each time.</p>
+ <div class="row"><select id="ps">${mt.map(u=>`<option value="M:${u}">Maths - ${u}</option>`).join("")}<option value="M:">Maths - mixed</option>${gs.map(s=>`<option value="G:${s}">${s}</option>`).join("")}</select>
+ <select id="pn"><option>10</option><option>20</option><option>30</option></select><button class="p" id="pgo">Start</button></div></div>
+ <div class="card"><h3>Shortcut drill</h3><p class="mut">Timed practice on question types where a shortcut applies. Aim for under 60 seconds each.</p><button id="dr">Start 10-question drill</button></div>`};
+P.practice.after=()=>{$("pgo").onclick=()=>{const [t,u]=$("ps").value.split(":"),n=+$("pn").value;let qs;if(t==="M")qs=Array.from({length:n},()=>genMaths(u||null));else{qs=shuffle(allStatic().filter(q=>q.s===u)).slice(0,n);if(!qs.length)return alert("No questions yet")}startRun(qs,{kind:"practice",name:"Practice"})};
+ $("dr").onclick=()=>{const u=["Trigonometry","Algebra","Matrices","Statistics","Geometry"];const qs=[];for(let i=0;i<10;i++)qs.push(genMaths(pick(["Trigonometry","Algebra","Matrices","Stats","Geometry"])));startRun(qs,{kind:"practice",name:"Shortcut drill"})}};
+P.recall=()=>{const t=today();const st=allStatic();const due=st.filter(q=>S.qs[q.id]&&S.qs[q.id].due<=t);const fresh=st.filter(q=>!S.qs[q.id]);
+ return `<div class="card"><h2>Daily recall</h2><p>Ten questions: cards due for review first, then new ones. Wrong answers return tomorrow; right answers come back after 1, 2, 4, 8, 16, 32 days.</p>
+ <p>Due now: <b>${due.length}</b> · New available: <b>${fresh.length}</b></p><button class="p" id="rgo">Start today's recall</button></div>
+ <div class="card"><h3>What did I remember today?</h3><textarea id="note" placeholder="Write 3 things you learned today, from memory, without looking."></textarea><button id="nsv">Save note</button><div id="notes">${(S.notes||[]).slice(-5).reverse().map(n=>`<p><span class="mut">${n.d}</span><br>${esc(n.t)}</p>`).join("")}</div></div>`};
+P.recall.after=()=>{$("rgo").onclick=()=>{const t=today();const st=allStatic();let qs=st.filter(q=>S.qs[q.id]&&S.qs[q.id].due<=t);qs=shuffle(qs).slice(0,10);if(qs.length<10)qs=qs.concat(shuffle(st.filter(q=>!S.qs[q.id])).slice(0,10-qs.length));
+  while(qs.length<10)qs.push(genMaths());startRun(qs.map(q=>Object.assign({},q)),{kind:"recall",name:"Daily recall"})};
+ $("nsv").onclick=()=>{const v=$("note").value.trim();if(!v)return;(S.notes=S.notes||[]).push({d:today(),t:v});save();go("recall")}};
+function buildMaths(n){return Array.from({length:n},()=>genMaths())}
+function buildGAT(total){const st=allStatic();const eng=shuffle(st.filter(q=>q.s==="English"));const gk=st.filter(q=>q.s!=="English"&&q.s!=="Maths");
+ const needEng=Math.round(total/3),needGK=total-needEng;const out=eng.slice(0,needEng);const short=[];if(eng.length<needEng)short.push(`English ${eng.length} of ${needEng}`);
+ const gkq=[];let have=0;for(const g in GKW){const need=Math.round(needGK*GKW[g]/100);const pool=shuffle(gk.filter(q=>gkGroup(q)===g));gkq.push(...pool.slice(0,need));have+=Math.min(pool.length,need);if(pool.length<need)short.push(`${g} ${pool.length} of ${need}`)}
+ return{qs:out.concat(gkq),short}}
+P.tests=()=>{const hist=S.tests.slice(-10).reverse();return `<div class="card"><h2>Tests</h2><p class="mut">Marking follows the real exam: Maths 2.5 marks, GAT 4 marks, one third deducted per wrong answer. A skipped question scores zero. Timer auto-submits.</p>
+ <div class="grid">
+ <div class="card"><h3>Weekly Maths</h3>30 questions · 45 min<br><button class="p" data-t="wm">Start</button></div>
+ <div class="card"><h3>Weekly GAT</h3>40 questions · 45 min<br><button class="p" data-t="wg">Start</button></div>
+ <div class="card"><h3>Monthly Maths mock</h3>120 questions · 150 min · 300 marks<br><button class="p" data-t="mm">Start</button></div>
+ <div class="card"><h3>Monthly GAT mock</h3>150 questions · 150 min · 600 marks<br><button class="p" data-t="mg">Start</button></div></div></div>
+ <div class="card"><h3>History</h3>${hist.length?`<table><tr><th>Date</th><th>Test</th><th>Score</th><th>R/W/S</th></tr>`+hist.map(x=>`<tr><td>${x.d}</td><td>${esc(x.name)}</td><td>${x.score}/${x.max}</td><td>${x.cor}/${x.wr}/${x.un}</td></tr>`).join("")+`</table>`:`<span class="mut">None yet.</span>`}</div>`};
+P.tests.after=()=>document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{const t=b.dataset.t;
+ if(t==="wm")startRun(buildMaths(30),{kind:"test",name:"Weekly Maths",mins:45,pm:2.5,cut:1});
+ else if(t==="mm")startRun(buildMaths(120),{kind:"test",name:"Monthly Maths mock",mins:150,pm:2.5,cut:1});
+ else{const full=t==="mg",tot=full?150:40;const g=buildGAT(tot);if(!g.qs.length)return alert("No GAT questions in the bank");
+  if(g.short.length&&!confirm(`The bank has only ${g.qs.length} of ${tot} GAT questions. Short: ${g.short.join(", ")}.\n\nThis will be a partial paper. Ask Claude to add more questions, then take the full paper.\n\nContinue with ${g.qs.length} questions?`))return;
+  startRun(shuffle(g.qs),{kind:"test",name:full?"Monthly GAT mock":"Weekly GAT",mins:full?Math.round(150*g.qs.length/150):Math.round(45*g.qs.length/tot),pm:4,cut:1})}});
+P.ca=()=>{const cats=["All",...new Set(FEED.items.map(i=>i.c))];
+ return `<div class="card"><h2>Current affairs</h2><p class="mut">Pulled automatically from news feeds ${FEED.updated?"· last update "+esc(FEED.updated):"· no data loaded yet"}. These are headlines, not verified facts: open the source before you rely on one.</p>
+ <div class="row"><select id="cc">${cats.map(c=>`<option>${esc(c)}</option>`).join("")}</select><input id="cs" placeholder="Search" style="flex:1;min-width:120px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px"><button class="p" id="cfl">10 flashcards</button></div></div><div id="cl"></div>`};
+P.ca.after=()=>{const draw=()=>{const c=$("cc").value,q=$("cs").value.trim().toLowerCase();const it=FEED.items.filter(i=>(c==="All"||i.c===c)&&(!q||i.h.toLowerCase().includes(q))).slice(0,80);
+  $("cl").innerHTML=it.length?it.map(i=>`<div class="card"><span class="tag">${esc(i.c)}</span><span class="mut">${esc(i.d)} · ${esc(i.s||"")}</span><p style="margin:8px 0">${esc(i.h)}</p>${/^https?:/.test(i.u||"")?`<a href="${esc(i.u)}" target="_blank" rel="noopener">Open source</a>`:""}</div>`).join(""):`<div class="card mut">Nothing to show. Open the app online to load the feed.</div>`};
+ $("cc").onchange=draw;$("cs").oninput=draw;draw();
+ $("cfl").onclick=()=>{const t=today();const id=i=>"ca:"+hsh(i.u||i.h);const due=FEED.items.filter(i=>S.qs[id(i)]&&S.qs[id(i)].due<=t);const fresh=FEED.items.filter(i=>!S.qs[id(i)]);
+  const set=shuffle(due).slice(0,10);const need=10-set.length;set.push(...fresh.slice(0,need));if(!set.length)return alert("No current-affairs items loaded yet");runFlash(set)}};
+let FL=null;
+function runFlash(items){FL={items,i:0,knew:0};drawFlash()}
+function drawFlash(){if(FL.i>=FL.items.length){$("app").innerHTML=`<div class="card"><h2>Flashcards done</h2><p>You knew ${FL.knew} of ${FL.items.length}. Cards you missed return tomorrow; known ones come back after longer gaps.</p><button class="p" onclick="go('ca')">Back</button></div>`;return}
+ const it=FL.items[FL.i];$("app").innerHTML=`<div class="card"><span class="tag">${esc(it.c)}</span><span class="mut">Card ${FL.i+1} / ${FL.items.length} · ${esc(it.d)}</span><p style="font-size:17px;margin:14px 0">${esc(it.h)}</p>${/^https?:/.test(it.u||"")?`<a href="${esc(it.u)}" target="_blank" rel="noopener">Open source</a>`:""}
+ <div class="row" style="margin-top:12px"><button class="p" id="fk">I knew this</button><button id="fn">Learn again</button></div></div>`;
+ const done=ok=>{const id="ca:"+hsh(it.u||it.h);srRecord(id,ok);stat("CurrentAffairs",it.c,ok);if(ok)FL.knew++;FL.i++;save();drawFlash()};
+ $("fk").onclick=()=>done(true);$("fn").onclick=()=>done(false)}
+P.current=()=>`<div class="card"><h2>Current affairs and bank</h2><p class="mut">Optional: add your own questions or notes as JSON. The shared question bank and current affairs update on their own from the internet.</p>
+ <h3>Add questions</h3><textarea id="jq" placeholder='[{"s":"CurrentAffairs","u":"Defence","q":"...","o":["A","B","C","D"],"a":1,"e":"source and note"}]'></textarea><button id="aq" class="p">Add to bank</button> <span id="aqm"></span>
+ <h3>Bank size</h3><div>${Object.entries(allStatic().reduce((m,q)=>(m[q.s]=(m[q.s]||0)+1,m),{})).map(([k,v])=>`<span class="tag">${k} ${v}</span>`).join("")}</div>
+ <h3>Latest items</h3>${(S.ca||[]).slice(-10).reverse().map(c=>`<p><span class="mut">${esc(c.d)}</span> ${esc(c.h)}</p>`).join("")||`<span class="mut">None yet.</span>`}
+ <textarea id="jc" placeholder='[{"d":"2026-11-12","h":"One-line fact with source"}]'></textarea><button id="ac">Add items</button>
+ <h3>Passcode lock (convenience only, not real security)</h3><div class="row"><input id="pcode" type="password" placeholder="New passcode"><button id="pset">Set</button><button id="pclr">Remove</button></div>
+ <h3>Backup</h3><div class="row"><button id="ex">Export data</button><button id="im">Import data</button></div><textarea id="bk" placeholder="Export text appears here. Paste a backup here and press Import."></textarea></div>`;
+P.current.after=()=>{$("aq").onclick=()=>{try{const a=JSON.parse($("jq").value);if(!Array.isArray(a))throw 0;const okq=a.filter(x=>x&&x.s&&x.q&&Array.isArray(x.o)&&x.o.length===4&&Number.isInteger(x.a)&&x.a>=0&&x.a<4);S.custom=S.custom.concat(okq);save();$("aqm").textContent=`Added ${okq.length} of ${a.length}`}catch(e){$("aqm").textContent="Invalid JSON"}};
+ $("ac").onclick=()=>{try{const a=JSON.parse($("jc").value);S.ca=S.ca.concat(a.filter(x=>x.d&&x.h));save();go("current")}catch(e){alert("Invalid JSON")}};
+ $("pset").onclick=async()=>{const v=$("pcode").value;if(v.length<4)return alert("Use at least 4 characters");S.lock=await sha(v);save();alert("Passcode set")};$("pclr").onclick=()=>{S.lock=null;save();alert("Passcode removed")};
+ $("ex").onclick=()=>{$("bk").value=JSON.stringify(S)};$("im").onclick=()=>{try{S=Object.assign({stats:{},qs:{},tests:[],covered:{},log:[],custom:[],ca:[],lock:null},JSON.parse($("bk").value));save();go("home")}catch(e){alert("Invalid backup")}}};
+const TABS=[["home","Home"],["syllabus","Syllabus"],["shortcuts","Shortcuts"],["practice","Practice"],["recall","Daily recall"],["tests","Tests"],["ca","Current affairs"],["current","Bank and backup"]];
+function go(p){if(R&&R.timer)clearInterval(R.timer);R=null;$("nav").innerHTML=TABS.map(t=>`<button data-g="${t[0]}" class="${t[0]===p?"on":""}">${t[1]}</button>`).join("");
+ document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{if(R&&!R.done&&!confirm("Leave this session? Progress in it will be lost."))return;go(b.dataset.g)});
+ $("app").innerHTML=P[p]();if(P[p].after)P[p].after()}
+/* ============ optional lock (convenience only; real privacy = private repo) ============ */
+async function sha(s){const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join("")}
+async function boot(){$("hd").textContent="NDA written exam prep";
+ if(S.lock){$("nav").innerHTML="";$("app").innerHTML=`<div class="card"><h2>Locked</h2><input id="pw" type="password" placeholder="Passcode"> <button class="p" id="un">Unlock</button> <span id="er" class="bad"></span></div>`;
+  $("un").onclick=async()=>{if(await sha($("pw").value)===S.lock)go("home");else $("er").textContent="Wrong passcode"}}
+ else go("home")}
+/* ============ PWA: install, share, service worker ============ */
+let dip=null;window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();dip=e;$("inst").hidden=false});
+window.addEventListener("appinstalled",()=>{$("inst").hidden=true});
+$("inst").onclick=async()=>{if(!dip)return;dip.prompt();await dip.userChoice;dip=null;$("inst").hidden=true};
+$("shr").onclick=async()=>{const u=location.href.split("#")[0];const t="Garcha NDA Coach: free NDA written exam prep app";
+ try{if(navigator.share){await navigator.share({title:t,text:t,url:u})}else{await navigator.clipboard.writeText(u);alert("Link copied: "+u)}}catch(e){}};
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone;
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+async function start(){await Promise.race([loadData(),new Promise(r=>setTimeout(r,6000))]);await boot();
+ if(ios&&!S.iosHint){S.iosHint=1;save();alert("To install on iPhone: tap Share, then 'Add to Home Screen'.")}}
+start();
+</script></body></html>
